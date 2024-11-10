@@ -81,12 +81,23 @@ def create_transaction():
 # Notify book unavailability
 @app.route('/notify_book_unavailable', methods=['GET'])
 def notify_book_unavailable():
-    return jsonify({'message': 'Book unavailable notification sent'})
+    unavailable_books = db.books.find({'available_copies': 0})
+    book_titles = [book['book_title'] for book in unavailable_books]
+    if book_titles:
+        return jsonify({'message': 'Book unavailable notification sent', 'books': book_titles})
+    else:
+        return jsonify({'message': 'All books are available'})
 
 # Notify overdue books
 @app.route('/notify_overdue_books', methods=['GET'])
 def notify_overdue_books():
-    return jsonify({'message': 'Overdue book notification sent'})
+    current_date = datetime.now()
+    overdue_transactions = db.borrow_transactions.find({'due_date': {'$lt': current_date}})
+    overdue_books = [{'user_id': transaction['user_id'], 'book_title': transaction['book_title']} for transaction in overdue_transactions]
+    if overdue_books:
+        return jsonify({'message': 'Overdue book notification sent', 'overdue_books': overdue_books})
+    else:
+        return jsonify({'message': 'No overdue books'})
 
 if __name__ == '__main__':
     app.run(debug=True)
